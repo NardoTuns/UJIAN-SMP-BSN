@@ -1,0 +1,15 @@
+SOAL
+Pertanyaan soal nomor 1?
+A. Pilihan A
+B. Pilihan B
+C. Pilihan C
+D. Pilihan D
+Kunci : A
+
+SOAL
+Pertanyaan soal nomor 2?
+A. Pilihan A
+B. Pilihan B
+C. Pilihan C
+D. Pilihan D
+Kunci : B
