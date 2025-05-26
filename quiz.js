@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBar = document.getElementById('progressBar');
     
     // Ambil file soal berdasarkan kelas dan mapel
-    const kelasNumber = kelas.substring(0, 1); // Ambil angka kelas saja (7, 8, atau 9)
+    const kelasNumber = kelas.substring(0, 1);
     const soalFile = `soal/${mapel}${kelasNumber}.txt`;
     
     fetch(soalFile)
@@ -36,18 +36,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.text();
         })
         .then(text => {
-            // Parse soal dari file teks
             questions = parseQuestions(text);
             userAnswers = new Array(questions.length).fill(null);
-            
-            // Tampilkan soal pertama
             showQuestion(currentQuestionIndex);
             updateProgressBar();
-            
-            // Sembunyikan tombol sebelumnya untuk soal pertama
             prevBtn.style.display = 'none';
-            
-            // Tampilkan tombol submit jika hanya ada 1 soal
             if (questions.length === 1) {
                 nextBtn.style.display = 'none';
                 submitBtn.style.display = 'block';
@@ -59,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainer.innerHTML = `<a href="index.html" class="return-btn">Kembali ke Login</a>`;
         });
     
-    // Fungsi untuk parse soal dari teks
     function parseQuestions(text) {
         const questionBlocks = text.split('\n\n');
         const questions = [];
@@ -77,12 +69,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                
                 if (i === 0 && line.startsWith('SOAL')) {
                     question.text = lines[i+1].trim();
-                    i++; // Skip line setelah SOAL
-                } 
-                else if (line.startsWith('A.')) question.options[0] = line.substring(2).trim();
+                    i++;
+                } else if (line.startsWith('A.')) question.options[0] = line.substring(2).trim();
                 else if (line.startsWith('B.')) question.options[1] = line.substring(2).trim();
                 else if (line.startsWith('C.')) question.options[2] = line.substring(2).trim();
                 else if (line.startsWith('D.')) question.options[3] = line.substring(2).trim();
@@ -98,17 +88,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return questions;
     }
     
-    // Tampilkan soal berdasarkan index
     function showQuestion(index) {
         if (index < 0 || index >= questions.length) return;
         
         const question = questions[index];
         currentQuestionIndex = index;
         
-        // Tampilkan teks soal
         questionText.textContent = `${index + 1}. ${question.text}`;
         
-        // Tampilkan gambar jika ada
         if (question.image && question.image.trim() !== '') {
             questionImage.src = `gambar/${question.image.trim()}`;
             questionImage.style.display = 'block';
@@ -116,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
             questionImage.style.display = 'none';
         }
         
-        // Tampilkan pilihan jawaban
         optionsContainer.innerHTML = '';
         question.options.forEach((option, i) => {
             const optionDiv = document.createElement('div');
@@ -136,31 +122,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.add('selected');
                 const selectedOption = this.querySelector('input').value;
                 userAnswers[index] = selectedOption;
-                
-                // Simpan jawaban user
-                if (selectedOption === question.answer) {
-                    // Jawaban benar
-                } else {
-                    // Jawaban salah
-                }
             });
             
             optionsContainer.appendChild(optionDiv);
         });
         
-        // Update tombol navigasi
         prevBtn.style.display = index === 0 ? 'none' : 'block';
         nextBtn.style.display = index === questions.length - 1 ? 'none' : 'block';
         submitBtn.style.display = index === questions.length - 1 ? 'block' : 'none';
     }
     
-    // Update progress bar
     function updateProgressBar() {
         const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
         progressBar.style.width = `${progress}%`;
     }
     
-    // Tombol navigasi
     prevBtn.addEventListener('click', function() {
         if (currentQuestionIndex > 0) {
             currentQuestionIndex--;
@@ -177,12 +153,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Tombol submit
     submitBtn.addEventListener('click', function() {
         calculateScore();
     });
     
-    // Hitung skor
     function calculateScore() {
         let correct = 0;
         let wrong = 0;
@@ -200,44 +174,41 @@ document.addEventListener('DOMContentLoaded', function() {
         
         score = Math.round((correct / questions.length) * 100);
         
-        // Simpan hasil di sessionStorage
         sessionStorage.setItem('score', score);
         sessionStorage.setItem('correct', correct);
         sessionStorage.setItem('wrong', wrong);
         sessionStorage.setItem('unanswered', unanswered);
         
-        // Kirim data ke Google Sheets
-        sendDataToGoogleSheets(nama, kelas, score);
+        sendDataToGoogleSheets(nama, kelas, mapel, score);
     }
-    
-    // Kirim data ke Google Sheets
-    function sendDataToGoogleSheets(nama, kelas, skor) {
-        const timestamp = new Date().toISOString();
-        const url = 'https://script.google.com/macros/s/AKfycbyi4UQupHlm-0I8Dyvv1LgEIDOiv1gb6qk8Gp-oT5O7hWi8Fgp_SpBo0pkWxX6fb9DW/exec';
-        
-        const data = {
-            nama: nama,
-            kelas: kelas,
-            skor: skor,
-            timestamp: timestamp
-        };
-        
-        fetch(url, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        })
-        .then(() => {
-            // Redirect ke halaman hasil setelah mengirim data
-            window.location.href = 'result.html';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Tetap redirect meskipun gagal kirim data
-            window.location.href = 'result.html';
-        });
-    }
+
+    // Fungsi untuk kirim data ke Google Sheets
+    function sendDataToGoogleSheets(nama, kelas, mapel, skor) {
+    const timestamp = new Date().toISOString();
+    const url = 'https://script.google.com/macros/s/AKfycbyu55oXoexzhb9cY2F8ybd-BRq4-MGYlIFmrncRpIP1azUEwe688_38R-xfOu-7_C3h6Q/exec';
+
+    const data = {
+        nama: nama,
+        kelas: kelas,
+        mapel: mapel,
+        skor: skor,
+        timestamp: timestamp
+    };
+
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        window.location.href = 'result.html';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        window.location.href = 'result.html';
+    });
+}
 });
