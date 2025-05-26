@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Kirim data ke Google Sheets
     function sendDataToGoogleSheets(nama, kelas, skor) {
         const timestamp = new Date().toISOString();
-        const url = 'https://script.google.com/macros/s/AKfycbzXUeY5rQEWmJKoWYr8cjcVJX_FHhf5zLhxXrKyIEiJYaXbM6oSGakiT8l98mwqa1BG/exec';
+        const url = 'https://script.google.com/macros/s/AKfycbyi4UQupHlm-0I8Dyvv1LgEIDOiv1gb6qk8Gp-oT5O7hWi8Fgp_SpBo0pkWxX6fb9DW/exec';
         
         const data = {
             nama: nama,
