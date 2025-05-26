@@ -1,48 +1,214 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const loginForm = document.getElementById('loginForm');
-    const password = '123'; // Password default, bisa diganti
+    // Ambil data dari sessionStorage
+    const nama = sessionStorage.getItem('nama');
+    const kelas = sessionStorage.getItem('kelas');
+    const mapel = sessionStorage.getItem('mapel');
     
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    // Tampilkan data siswa
+    document.getElementById('displayNama').textContent = nama;
+    document.getElementById('displayKelas').textContent = kelas;
+    document.getElementById('displayMapel').textContent = mapel;
+    
+    // Variabel kuis
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let score = 0;
+    
+    // Elemen DOM
+    const questionText = document.getElementById('questionText');
+    const questionImage = document.getElementById('questionImage');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    
+    // Ambil file soal berdasarkan kelas dan mapel
+    const kelasNumber = kelas.substring(0, 1);
+    const soalFile = `soal/${mapel}${kelasNumber}.txt`;
+    
+    fetch(soalFile)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('File soal tidak ditemukan');
+            }
+            return response.text();
+        })
+        .then(text => {
+            questions = parseQuestions(text);
+            userAnswers = new Array(questions.length).fill(null);
+            showQuestion(currentQuestionIndex);
+            updateProgressBar();
+            prevBtn.style.display = 'none';
+            if (questions.length === 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            questionText.textContent = 'Gagal memuat soal. Silakan hubungi administrator.';
+            optionsContainer.innerHTML = `<a href="index.html" class="return-btn">Kembali ke Login</a>`;
+        });
+    
+    function parseQuestions(text) {
+        const questionBlocks = text.split('\n\n');
+        const questions = [];
+        
+        for (const block of questionBlocks) {
+            if (block.trim() === '') continue;
             
-            const nama = document.getElementById('nama').value;
-            const kelas = document.getElementById('kelas').value;
-            const rombel = document.getElementById('rombel').value;
-            const mapel = document.getElementById('mapel').value;
-            const inputPassword = document.getElementById('password').value;
+            const lines = block.split('\n');
+            const question = {
+                text: '',
+                options: [],
+                answer: '',
+                image: ''
+            };
             
-            if (inputPassword !== password) {
-                alert('Password salah! Silakan coba lagi.');
-                return;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (i === 0 && line.startsWith('SOAL')) {
+                    question.text = lines[i+1].trim();
+                    i++;
+                } else if (line.startsWith('A.')) question.options[0] = line.substring(2).trim();
+                else if (line.startsWith('B.')) question.options[1] = line.substring(2).trim();
+                else if (line.startsWith('C.')) question.options[2] = line.substring(2).trim();
+                else if (line.startsWith('D.')) question.options[3] = line.substring(2).trim();
+                else if (line.startsWith('Kunci :')) question.answer = line.substring(7).trim();
+                else if (line.startsWith('Gambar :')) question.image = line.substring(8).trim();
             }
             
-            // Simpan data siswa di sessionStorage
-            sessionStorage.setItem('nama', nama);
-            sessionStorage.setItem('kelas', kelas + rombel.toUpperCase());
-            sessionStorage.setItem('mapel', mapel);
-            
-            // Redirect ke halaman kuis
-            window.location.href = 'quiz.html';
-        });
+            if (question.text && question.options.length === 4 && question.answer) {
+                questions.push(question);
+            }
+        }
+        
+        return questions;
     }
     
-    // Link kelas dan rombel
-    const kelasSelect = document.getElementById('kelas');
-    const rombelSelect = document.getElementById('rombel');
-    
-    if (kelasSelect && rombelSelect) {
-        kelasSelect.addEventListener('change', function() {
-            const selectedKelas = this.value;
-            rombelSelect.innerHTML = '<option value="">Pilih Rombel</option>';
-            
-            if (selectedKelas === '7') {
-                rombelSelect.innerHTML += '<option value="7a">7A</option><option value="7b">7B</option>';
-            } else if (selectedKelas === '8') {
-                rombelSelect.innerHTML += '<option value="8a">8A</option><option value="8b">8B</option>';
-            } else if (selectedKelas === '9') {
-                rombelSelect.innerHTML += '<option value="9a">9A</option><option value="9b">9B</option>';
+    function showQuestion(index) {
+        if (index < 0 || index >= questions.length) return;
+        
+        const question = questions[index];
+        currentQuestionIndex = index;
+        
+        questionText.textContent = `${index + 1}. ${question.text}`;
+        
+        if (question.image && question.image.trim() !== '') {
+            questionImage.src = `gambar/${question.image.trim()}`;
+            questionImage.style.display = 'block';
+        } else {
+            questionImage.style.display = 'none';
+        }
+        
+        optionsContainer.innerHTML = '';
+        question.options.forEach((option, i) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            if (userAnswers[index] === String.fromCharCode(65 + i)) {
+                optionDiv.classList.add('selected');
             }
+            
+            optionDiv.innerHTML = `
+                <input type="radio" name="answer" id="option${i}" value="${String.fromCharCode(65 + i)}" 
+                    ${userAnswers[index] === String.fromCharCode(65 + i) ? 'checked' : ''}>
+                <label for="option${i}">${String.fromCharCode(65 + i)}. ${option}</label>
+            `;
+            
+            optionDiv.addEventListener('click', function() {
+                document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                const selectedOption = this.querySelector('input').value;
+                userAnswers[index] = selectedOption;
+            });
+            
+            optionsContainer.appendChild(optionDiv);
+        });
+        
+        prevBtn.style.display = index === 0 ? 'none' : 'block';
+        nextBtn.style.display = index === questions.length - 1 ? 'none' : 'block';
+        submitBtn.style.display = index === questions.length - 1 ? 'block' : 'none';
+    }
+    
+    function updateProgressBar() {
+        const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    prevBtn.addEventListener('click', function() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+            updateProgressBar();
+        }
+    });
+    
+    nextBtn.addEventListener('click', function() {
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+            updateProgressBar();
+        }
+    });
+    
+    submitBtn.addEventListener('click', function() {
+        calculateScore();
+    });
+    
+    function calculateScore() {
+        let correct = 0;
+        let wrong = 0;
+        let unanswered = 0;
+        
+        for (let i = 0; i < questions.length; i++) {
+            if (userAnswers[i] === null) {
+                unanswered++;
+            } else if (userAnswers[i] === questions[i].answer) {
+                correct++;
+            } else {
+                wrong++;
+            }
+        }
+        
+        score = Math.round((correct / questions.length) * 100);
+        
+        sessionStorage.setItem('score', score);
+        sessionStorage.setItem('correct', correct);
+        sessionStorage.setItem('wrong', wrong);
+        sessionStorage.setItem('unanswered', unanswered);
+        
+        sendDataToGoogleSheets(nama, kelas, mapel, score);
+    }
+
+    // Fungsi untuk kirim data ke Google Sheets
+    function sendDataToGoogleSheets(nama, kelas, mapel, skor) {
+        const timestamp = new Date().toISOString();
+        const url = 'https://script.google.com/macros/s/AKfycbxqzTYtzogzQ-XmlWeGicdwAcB9ci9aaoFVNq3sYczee265XBUK4Bvh_aGOjfUwDh-0OQ/exec';
+        
+        const data = {
+            nama: nama,
+            kelas: kelas,
+            mapel: mapel,
+            skor: skor,
+            timestamp: timestamp
+        };
+        
+        fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(() => {
+            window.location.href = 'result.html';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.location.href = 'result.html';
         });
     }
 });
