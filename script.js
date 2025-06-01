@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
-    const password = '123'; // Password default, bisa diganti
+    const password = '212'; // Password default, bisa diganti
     
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
